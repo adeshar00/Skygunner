@@ -1,0 +1,175 @@
+
+(for battle.c or game.c or some place)
+There are general categories of guns (differing by routine), specific types/models of guns
+ (Vulcan Rotary Cannon, Artemis Chargecell Cannon, etc), and the specific instances of
+ guns that a player owns.
+Parameters that differentiate specific types of guns are store in a struct of arrays called
+ guntypes, of which there is one global instance called ba_guntypes.
+Example: to get the "reloadtime" of a specific guntype, it would be ba_guntypes.reloadtime[guntype]
+Gun routines are determined by the "gunroutine" parameter of ba_guntypes, the value of which
+ determines the code dictating the behavior of that gun (so guntypes of the "auto" gun
+ routine will continuously spawn bullets when the trigger is held, while guntypes of the 
+ "charge" gun routine will charge as the trigger is held and fire when released)
+Specific instances of guntypes that the player owns are stored in FLAG COMPLETE WHEN IN PLACE
+The instances of guntypes that are available on a players ship during the battle gamephase
+ are determined by the "arsenal" struct passed from the gamephase.
+FLAG more about arsenal...
+things to explain:
+guntypes struct and all it's parameters
+missletypes struct and all its paramters
+gunroutines, that they're a paramter and that they determine how gun shoots
+arsenal: guns and gun paramters, ammoboxes and ammobox paramters
+ammoclasses and how guns guntype ammo class has to match up with the ammoclass of the missletype
+ in a given ammobox
+
+
+
+(for globals.h or .c)
+truly global variables prefixed with g_
+global variables pertaining to a specific encapsulation prefixed with first two letters of that
+ encapsulation
+
+PHYSICS:
+
+All physical quantities (position, velocity, acceleration) are stored in a form
+ representing SI units (meters, seconds).  Accounting for time steps and stuff
+ is done in the code responsibile for applying velocity to acceleration or accel to velocity
+
+HEADER FILES:
+
+For the sake of encapsulation, .h files are written so that structs, extern handles, and
+  function prototypes are visible only to the .c files which are supposed to use them.
+ This is acheived by having a preprocessor definition in each .c file corresponding to that
+  files name (i.e. MAIN_C), which is defined before header inclusions.
+ Every line in the .h file is wrapped in preprocessor if statements that check for the
+  appropriate definitions. 
+
+ 
+
+THREADS:
+
+All threading code (joins, mutex use, conditions, etc) is abstracted away into thread.c
+
+There are two major threads: the UI thread and the main thread.
+ UI thread deals with all code relating to interaction with the user: rendering to the screen,
+  sound, input, menus, all that shtuff.
+ Main thread takes care of starting a new game, switching between modes, game logic, etc.
+  Basically, any time there's data that interacts with other data, it belongs "under
+  the hood" in the main thread.
+
+UI thread and Main thread need to be doing same general task.
+ To make sure this is the case, game flow has been split into general phases, and
+  both threads wait for each other before transitioning between phases.
+ Main thread is always one to initiate phase change.
+  To initiate gamephase change, main thread calls thread_changegamephase.
+  Every tick, UI thread must call thread_checkforgamephasechange.
+  When main thread calls thread_changegamephase, the main thread gets hung until
+   UI calls thread_checkforgamephasechange: at that point, the game phase is changed
+   and both threads will resume.
+ The phases are:
+  Intro (UI shows splash screens, then after a "loading" screen while main loads data)
+  Main Menu (main thread basically just waits for UI thread while user navigates menus)
+  Loading (transitory phase: main thread loads assets while UI displays "loading..." text)
+  Battle (main thread processes mechanics, ui visuals sound and input)
+  Shop (mostly UI thread- main thread passes info at init, then ui confirms purchases with main)
+  Game Over (main thread just waits while UI thread shows "Game Over" screen)
+  Terminate (both threads run their exit routines and close the program)
+
+Inter-Thread Data (ITD):
+ Most game phases require the need to pass data between the UI thread and main thread.
+ These phases each have a corresponding struct type to hold the data to be passed between
+  threads: this struct's location in memory is stored in the th_itd variable (a void pointer).
+ Game phase changes should only happen after appropriate ITD struct has been allocated.
+ All reads and writes to the ITD should be preceded by a call to thread_lockitdmutex and
+  followed with a call to thread_unlockitdmutex.
+ When possible, modification of the itd struct should be limited to a single .c file, with
+  functions that can be can be called by both threads (for an example, see mainmenu.c: note
+  that the mainmenuitd struct is only visible within that file; ITD modifications by the UI
+  thread are achieved by calling functions defined in mainmenu.c)
+
+
+
+PROCESS STACK:
+
+All of the game's subprocesses have a parent/child-like relationship with each other.
+ Each Process also has it's own data, and it's own main routine (which is often an
+  infinite loop).
+ If the game were single-threaded, process data could just be stored as local data in a
+  function, with the infinite loop contained in the body of that function.
+  The function for a child process could be called within that loop, and then the infinite
+   loop within that child function would continuously execute until canceled, at which
+   point the infinite loop of the parent function would resume.
+ But because there are multiple threads, each with their own stack, and the game needs to
+  be able to compile as both single and multi-threaded, using functions to define subprocesses
+  won't work as singled threaded C programs contain only one function stack.
+
+This game uses a data structure I'm calling a "process stack", used to emulate the behavior
+  of the C function stack, but allows for multiple instances of the stack.
+ The process stack is a linked list of process nodes; the head of the list being the
+  newest child, the tail of the list being the oldest parent.
+ Each "tick" of game time, the loop function of the head process of each process
+  stack is called.
+ Each process node (stored as a "processframe" struct) contains a pointer to a struct
+  holding all of that process's data, and pointers to that processes loop function and
+  "pop" function (a routine to run when the process is popped from the stack: mainly
+  freeing all data allocated for that routine).
+
+Every defined process has a global "process" struct.
+ This struct contains pointers to the processes init loop and pop functions.
+ To push a process onto the stack, process_push is called with the global process struct
+  of the desired process passed as an argument.
+ That processes init function is run right when process_push is called (it doesn't wait for
+  the loop function to finish), and then that processes loop function runs continuously
+  until process_pop() is called.
+ process_pop runs the current processes pop function (right at the time of calling, it doesn't
+  wait for the current loop to finish), and then that processes parent process in the stack
+  becomes the head, and it's loop function runs once the pop'd processes loop function finishes.
+
+
+
+TIME MANAGEMENT:
+
+All time management code abstracted away into thread.c
+
+tick.c tracks the global clock, and provides a "ticker" mechanism which allows threads to loop
+ at a steady frequency.
+
+To use a ticker, a thread needs to call the thread_createticker function, and then pass the
+ returned ticker to the thread_waitforticker function, to produce the necessary delay.
+ More information about tickers is written in the ticker section of thread.c.
+
+
+
+UI:
+
+UI.c takes care of organizing the three main aspects of the user interface, which are the
+visuals, input, and sound.  These are each handled in their own .c files, called render.c,
+input.c, and sound.c.
+
+
+
+LAG:
+
+When the main thread is generating data to be used for rendering, it's currently working
+ on what will be passed to the UI thread at the beginning of the next tick.
+
+The data passed to the UI thread contains two sets of coordinates for all objects: where
+ that object should be drawn at the beginning of that tick, and where it is should be
+ drawn at the end of that tick.
+ Therefore, at the beginning of a tick, the main thread is calculating where an object
+ will be two ticks ahead of where that object is currently being drawn.
+ This will result in what "feels" like two ticks (main thread period x2) worth of lag
+ between user input and visual confirmation of that input.
+
+This is done so that the main thread can be relatively "slow" (run at a low frequency)
+ while the frame rate can still be high and appear smooth.  And since the main thread
+ almost instantly updates the ITD at the beginning of a tick with new data (since that
+ data was calculated during the previous tick), the render routine doesn't have to
+ make potentially inaccurate guesses at an objects location based on it's velocity
+ during the previous tick (so if an object hits a wall, it doesn't appear to briefly
+ pass through that wall while the main thread calculates it's new position).
+
+
+
+
+

@@ -1,0 +1,2 @@
+skygunner: src/main.c src/ui.c src/thread.c src/game.c src/battle.c src/shop.c src/process.c src/mainmenu.c src/render.c src/input.c src/matrix.c src/intmath.c src/init.c src/globals.c src/sound.c src/debug.c
+	gcc src/main.c src/ui.c src/thread.c src/game.c src/battle.c src/shop.c src/process.c src/mainmenu.c src/render.c src/input.c src/matrix.c src/intmath.c src/init.c src/globals.c src/sound.c src/debug.c -lm -lpthread -L./SDL2-2.0.3/build -lSDL2 -lGL -lGLEW -Wall -O3 -o skygunner
