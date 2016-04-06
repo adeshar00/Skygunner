@@ -1,6 +1,6 @@
 #About
 
-This is a game that I began working on in 2014.  It's written in C, and can be compiled for the web with Emscripten (the web version of it can be played [here](http://adeshar00.github.io/Skygunner/)).
+This is a game that I began working on in 2014.  It's written in C, and can be compiled for the web with emscripten (the web version of it can be played [here](http://adeshar00.github.io/Skygunner/)).
 
 The player pilots a helicopter, and has to shoot incoming enemies before they reach the player's base.  This game is still in the early stages of development: the game models are just ellipsoids, there is no collision detection between the player and anything else, and there are no victory/defeat conditions.
 
