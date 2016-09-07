@@ -14,7 +14,7 @@ The majority of the game's data are stored as fixed-point numbers (represented o
 
 Physical relativity is obeyed in the game's gun mechanics: bullet escape velocity is affected by the velocity of the player.  The rotation of the player's gun is automatically adjusted to account for the player's velocity, to make aiming at stationary targets easier; the larger mouse cursor indicates bullet escape velocity relative to the ground, while the smaller trailing cursor indicates bullet escape velocity relative to the helicopter.
 
-The collision detection between bullets and enemies is achieved by checking if spherical zones around the bullets overlap with ellipsoidal zones around the enemies.  With some linear algebra, this ellipsoid/sphere check is turned into a sphere/sphere check, which is computationally efficient, and is accurate regardless of bullet or enemy velocity.
+The collision detection between bullets and enemies is achieved by checking if moving spherical zones around the bullets overlap with moving ellipsoidal zones around the enemies.  With some linear algebra, this ellipsoid/sphere check is reduced to a sphere/line-segment check, which is computationally efficient, and is accurate regardless of bullet or enemy velocity.
 
 #Controls
 
