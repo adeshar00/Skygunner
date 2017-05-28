@@ -1,4 +1,4 @@
-#About
+# About
 
 This is a game that I began working on in 2014.  It's written in C, and can be compiled for the web with emscripten (the web version of it can be played [here](http://adeshar00.github.io/Skygunner/)).
 
@@ -6,7 +6,7 @@ The player pilots a helicopter, and has to shoot incoming enemies before they re
 
 Build instructions are at the bottom of this file.  The game's controls are above the build instructions.
 
-#Development
+# Development
 
 A lot of the code is experimental.  This was my first time making a non-trivial multithreaded application, I played with different ways to encapsulate my code with header files, and I also tried implementing a few data-oriented design techniques (like avoiding branch instructions where possible, and organizing my data in ways to minimize cache misses).
 
@@ -16,7 +16,7 @@ Physical relativity is obeyed in the game's gun mechanics: bullet escape velocit
 
 The collision detection between bullets and enemies is achieved by checking if moving spherical zones around the bullets overlap with moving ellipsoidal zones around the enemies.  With some linear algebra, this ellipsoid/sphere check is reduced to a sphere/line-segment check, which is computationally efficient, and is accurate regardless of bullet or enemy velocity.
 
-#Controls
+# Controls
 
 |Action                 |Button                    |
 |-----------------------|--------------------------|
@@ -29,7 +29,7 @@ The collision detection between bullets and enemies is achieved by checking if m
 
 Your copter has two weapons: a machine gun and a cannon.  Note that the big dark green enemies (which are supposed to be tanks) are immune to machine gun bullets, so to kill them you'll need to hit '2' to switch to the cannon.
 
-#To Build
+# To Build
 
 Dependencies: OpenGL ES 2.0, GLEW, and SDL2.  On Debian systems these can be downloaded with the following commands:
 
